@@ -1,12 +1,24 @@
 const mongoose = require('mongoose');
 
+let isConnected = false; // Track connection status
+
 const connectDB = async () => {
+    if (isConnected) {
+        console.log('Using existing MongoDB connection');
+        return;
+    }
+
     try {
-        const conn = await mongoose.connect(process.env.MONGO_URI);
+        const conn = await mongoose.connect(process.env.MONGO_URI, {
+            dbName: 'visitor_management' // Optional: Specify DB name if needed, or rely on URI
+        });
+        
+        isConnected = true;
         console.log(`MongoDB Connected: ${conn.connection.host}`);
     } catch (error) {
         console.error(`Error: ${error.message}`);
-        process.exit(1);
+        // Do not exit process in serverless environment
+        throw error;
     }
 };
 

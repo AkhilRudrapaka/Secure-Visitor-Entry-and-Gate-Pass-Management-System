@@ -26,7 +26,7 @@ app.use(helmet());
 
 // CORS Configuration
 app.use(cors({
-    origin: ['http://localhost:5173', 'http://localhost:5174'], // Vite default port & backup
+    origin: ['http://localhost:5173', 'http://localhost:5174', process.env.CLIENT_URL], // Vite default port & backup & Production
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization']
@@ -56,8 +56,14 @@ app.use((err, req, res, next) => {
     res.status(status).json({ success: false, message });
 });
 
+// Export the app for Vercel
+module.exports = app;
+
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-    console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-});
+// Only start the server if this file is run directly (not imported)
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+    });
+}
