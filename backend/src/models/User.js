@@ -67,17 +67,24 @@ const UserSchema = new mongoose.Schema({
 });
 
 // Encrypt phone and hash password
+// Encrypt phone and hash password
 UserSchema.pre('save', async function () {
-    if (this.isModified('phone')) {
-        this.phone = encrypt(this.phone);
-    }
+    try {
+        if (this.isModified('phone')) {
+            this.phone = encrypt(this.phone);
+        }
 
-    if (!this.isModified('password')) {
-        return;
+        if (!this.isModified('password')) {
+            return;
+        }
+        
+        console.log('Hashing password for user:', this.email);
+        const salt = await bcrypt.genSalt(10);
+        this.password = await bcrypt.hash(this.password, salt);
+    } catch (error) {
+        console.error('Error in pre-save hook:', error);
+        throw error;
     }
-    
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
 });
 
 

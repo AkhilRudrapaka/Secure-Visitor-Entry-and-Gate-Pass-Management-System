@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
 import { User, Mail, Lock, Phone, Briefcase, Eye, EyeOff, Check, X } from 'lucide-react';
@@ -36,9 +36,16 @@ const Register = () => {
         return 'var(--success)';
     };
     
-    const { register, error } = useContext(AuthContext);
+    const { register, error, user } = useContext(AuthContext);
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
+
+    // Redirect if already logged in
+    useEffect(() => {
+        if (user) {
+            navigate('/dashboard');
+        }
+    }, [user, navigate]);
 
     const { name, email, password, confirmPassword, phone, role, department } = formData;
 

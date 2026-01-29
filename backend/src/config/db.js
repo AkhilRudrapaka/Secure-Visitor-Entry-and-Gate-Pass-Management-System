@@ -10,7 +10,7 @@ const connectDB = async () => {
 
     try {
         const conn = await mongoose.connect(process.env.MONGO_URI, {
-            dbName: 'visitor_management' // Optional: Specify DB name if needed, or rely on URI
+            dbName: 'secure_gate_pass' // Optional: Specify DB name if needed, or rely on URI
         });
         
         isConnected = true;

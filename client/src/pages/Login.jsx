@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
 import api from '../api/axios';
@@ -8,11 +8,18 @@ const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [role, setRole] = useState('visitor'); // Optional: Helps if multi-role logic needed locally, but API dictates
-    const { setUser } = useContext(AuthContext);
+    const { setUser, user } = useContext(AuthContext);
     const navigate = useNavigate();
     const [bgLoading, setBgLoading] = useState(false);
     const [error, setError] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+
+    // Redirect if already logged in
+    useEffect(() => {
+        if (user) {
+            navigate('/dashboard');
+        }
+    }, [user, navigate]);
 
 
     const handleSubmit = async (e) => {

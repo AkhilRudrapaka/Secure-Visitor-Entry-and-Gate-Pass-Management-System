@@ -10,6 +10,10 @@ exports.register = async (req, res) => {
     try {
         const { name, email, password, role, phone, department } = req.body;
 
+        const cleanEmail = email ? email.trim().toLowerCase() : '';
+        const cleanName = name ? name.trim() : '';
+        const cleanPhone = phone ? phone.trim() : '';
+
         // Check if this is the first user (make them admin)
         // Check if this is the first user (make them admin)
         const isFirstAccount = (await User.countDocuments({})) === 0;
@@ -23,11 +27,11 @@ exports.register = async (req, res) => {
         }
 
         const user = await User.create({
-            name,
-            email,
+            name: cleanName,
+            email: cleanEmail,
             password,
             role: finalRole,
-            phone,
+            phone: cleanPhone,
             department,
             twoFactorEnabled: true // Enforce 2FA for everyone by default
         });
@@ -61,15 +65,19 @@ exports.login = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Please provide email and password' });
         }
 
-        const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+        console.log(`Login attempt for: ${email}`);
+
+        const user = await User.findOne({ email: email.trim().toLowerCase() }).select('+password');
 
         if (!user) {
+            console.log(`Login failed: User not found for email: ${email}`);
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
 
         const isMatch = await user.matchPassword(password);
 
         if (!isMatch) {
+            console.log(`Login failed: Password mismatch for user: ${email}`);
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
 
