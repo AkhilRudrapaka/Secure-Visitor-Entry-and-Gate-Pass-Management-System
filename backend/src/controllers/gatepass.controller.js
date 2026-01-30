@@ -13,7 +13,7 @@ exports.generatePass = async (req, res, next) => {
     try {
         const { visitId } = req.body;
 
-        const visit = await Visitor.findById(visitId);
+        const visit = await Visitor.findById(visitId).populate('host', 'name');
         
         if (!visit) {
             return res.status(404).json({ success: false, message: 'Visit not found' });
@@ -65,8 +65,11 @@ exports.generatePass = async (req, res, next) => {
         // Generate QR Payload
         const payloadData = {
             id: shortCode, 
-            uid: req.user.name,
-            exp: pass.validUntil
+            name: req.user.name,
+            role: req.user.role,
+            purpose: visit.purpose,
+            host: visit.host.name,
+            validUntil: pass.validUntil
         };
 
         // Create Digital Signature (HMAC)
@@ -124,6 +127,46 @@ exports.verifyPass = async (req, res, next) => {
         await logAction(req.user.id, 'VERIFY_SUCCESS', `Gate pass ${pass._id} verified successfully`, req);
 
         res.status(200).json({ success: true, message: 'Access Granted', data: pass });
+    } catch (err) {
+        next(err);
+    }
+};
+// @desc    Mark Visitor Entry (Check-In)
+// @route   POST /api/gatepass/entry
+// @access  Private (Security)
+exports.markEntry = async (req, res, next) => {
+    try {
+        const { passCode } = req.body;
+
+        const pass = await GatePass.findOne({ passCode }).populate('visitorRequest');
+
+        if (!pass) {
+             return res.status(404).json({ success: false, message: 'Invalid Gate Pass' });
+        }
+
+        const visit = pass.visitorRequest;
+
+        if (!visit) {
+             return res.status(404).json({ success: false, message: 'Associated Visit not found' });
+        }
+
+        if (visit.status === 'approved') {
+            visit.status = 'checked-in';
+            visit.checkInTime = Date.now();
+            await visit.save();
+            await logAction(req.user.id, 'VISITOR_ENTRY', `Visitor checked in with pass ${passCode}`, req);
+            
+            return res.status(200).json({ 
+                success: true, 
+                message: 'Visitor Successfully Checked In', 
+                data: visit 
+            });
+        } else if (visit.status === 'checked-in') {
+            return res.status(400).json({ success: false, message: 'Visitor is already checked in' });
+        } else {
+             return res.status(400).json({ success: false, message: `Cannot allow entry. Status is ${visit.status}` });
+        }
+
     } catch (err) {
         next(err);
     }

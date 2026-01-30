@@ -79,7 +79,7 @@ const Register = () => {
     };
 
     return (
-        <div className="flex-center" style={{ minHeight: '100vh', paddingTop: '100px', paddingBottom: '50px' }}>
+        <div className="flex-center" style={{ minHeight: 'calc(100vh - 70px)', marginTop: '70px', paddingBottom: '50px', width: '100vw' }}>
             <div className="glass-card animate-fade-in" style={{ width: '100%', maxWidth: '500px' }}>
                 <h2 style={{ textAlign: 'center', marginBottom: '2rem' }}>Create Account</h2>
                 

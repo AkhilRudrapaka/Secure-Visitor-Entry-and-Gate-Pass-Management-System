@@ -94,7 +94,7 @@ const AdminDashboard = () => {
             <h1>System Overview</h1>
             
             {/* Stats Cards */}
-            <div className="grid-cols-2" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem', marginBottom: '3rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
                 <div className="glass-card">
                     <div className="flex-center" style={{ justifyContent: 'flex-start', gap: '1rem' }}>
                         <Users size={32} color="var(--primary)" />
@@ -168,7 +168,7 @@ const AdminDashboard = () => {
                          {pendingVisits.length === 0 ? <p className="text-muted">No pending requests.</p> : (
                              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                                 <thead>
-                                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                                    <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
                                         <th style={{ padding: '1rem' }}>Visitor</th>
                                         <th style={{ padding: '1rem' }}>Faculty</th>
                                         <th style={{ padding: '1rem' }}>Time</th>
@@ -178,7 +178,7 @@ const AdminDashboard = () => {
                                 </thead>
                                 <tbody>
                                     {pendingVisits.map(v => (
-                                        <tr key={v._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                        <tr key={v._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                                             <td style={{ padding: '1rem' }}>{v.user.name}</td>
                                             <td style={{ padding: '1rem' }}>{v.host.name}</td>
                                             <td style={{ padding: '1rem' }}>{new Date(v.expectedEntryTime).toLocaleString()}</td>
@@ -200,7 +200,7 @@ const AdminDashboard = () => {
                          {pendingUsers.length === 0 ? <p className="text-muted">No pending user registrations.</p> : (
                              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                                 <thead>
-                                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                                    <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
                                         <th style={{ padding: '1rem' }}>Name</th>
                                         <th style={{ padding: '1rem' }}>Email</th>
                                         <th style={{ padding: '1rem' }}>Role</th>
@@ -210,7 +210,7 @@ const AdminDashboard = () => {
                                 </thead>
                                 <tbody>
                                     {pendingUsers.map(u => (
-                                        <tr key={u._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                        <tr key={u._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                                             <td style={{ padding: '1rem' }}>{u.name}</td>
                                             <td style={{ padding: '1rem' }}>{u.email}</td>
                                             <td style={{ padding: '1rem' }}>
@@ -266,7 +266,7 @@ const AdminDashboard = () => {
                         </div>
                         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                             <thead>
-                                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                                <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
                                     <th style={{ padding: '1rem' }}>Time</th>
                                     <th style={{ padding: '1rem' }}>User</th>
                                     <th style={{ padding: '1rem' }}>Action</th>
@@ -275,7 +275,7 @@ const AdminDashboard = () => {
                         </thead>
                         <tbody>
                             {logs.map(log => (
-                                <tr key={log._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                <tr key={log._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                                     <td style={{ padding: '1rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
                                         {new Date(log.timestamp).toLocaleString()}
                                     </td>
@@ -294,7 +294,7 @@ const AdminDashboard = () => {
                 {activeTab === 'users' && (
                     <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                         <thead>
-                            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                            <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
                                 <th style={{ padding: '1rem' }}>Name</th>
                                 <th style={{ padding: '1rem' }}>Email</th>
                                 <th style={{ padding: '1rem' }}>Role</th>
@@ -304,16 +304,22 @@ const AdminDashboard = () => {
                         </thead>
                         <tbody>
                             {users.map(u => (
-                                <tr key={u._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                <tr key={u._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                                     <td style={{ padding: '1rem' }}>{u.name}</td>
                                     <td style={{ padding: '1rem' }}>{u.email}</td>
                                     <td style={{ padding: '1rem' }}>
                                         <span style={{ 
                                             padding: '4px 8px', borderRadius: '10px', 
-                                            background: u.role === 'admin' ? 'var(--primary)' : 'rgba(255,255,255,0.1)',
+                                            background: u.role === 'admin' ? 'var(--primary)' 
+                                                : u.role === 'security' ? 'var(--secondary)'
+                                                : u.role === 'faculty' ? 'purple'
+                                                : u.role === 'student' ? 'teal'
+                                                : 'gray',
+                                            color: '#fff',
+                                            fontWeight: 'bold',
                                             fontSize: '0.8rem'
                                         }}>
-                                            {u.role}
+                                            {u.role.toUpperCase()}
                                         </span>
                                     </td>
                                     <td style={{ padding: '1rem' }}>{u.phone}</td>

@@ -198,7 +198,7 @@ const VisitorDashboard = () => {
                             <span style={{ 
                                 padding: '5px 10px', 
                                 borderRadius: '15px', 
-                                background: visit.status === 'approved' ? 'rgba(0,255,0,0.1)' : visit.status === 'rejected' || visit.status === 'cancelled' ? 'rgba(255,0,0,0.1)' : 'rgba(255,255,0,0.1)',
+                                background: visit.status === 'approved' ? '#dcfce7' : visit.status === 'rejected' || visit.status === 'cancelled' ? '#fee2e2' : '#fef3c7',
                                 color: visit.status === 'approved' ? 'var(--success)' : visit.status === 'rejected' || visit.status === 'cancelled' ? 'var(--danger)' : 'var(--warning)',
                                 fontWeight: 'bold'
                             }}>

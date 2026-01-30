@@ -38,7 +38,7 @@ const HostDashboard = () => {
     return (
         <div className="container" style={{ paddingTop: '100px' }}>
             <h1>Faculty Dashboard</h1>
-            <p className="text-muted">Manage visitor requests</p>
+            <p className="text-muted">Manage students requests</p>
             
             <div style={{ marginTop: '2rem' }}>
                 <h3>Pending Requests ({pendingVisits.length})</h3>

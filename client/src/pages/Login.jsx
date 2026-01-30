@@ -47,7 +47,7 @@ const Login = () => {
     };
 
     return (
-        <div className="flex-center" style={{ minHeight: '100vh', paddingTop: 'var(--header-height)' }}>
+        <div className="flex-center" style={{ minHeight: 'calc(100vh - 70px)', marginTop: '70px', width: '100vw' }}>
             <div className="glass-card animate-fade-in" style={{ width: '100%', maxWidth: '400px' }}>
                 <h2 style={{ textAlign: 'center', marginBottom: '2rem' }}>Welcome Back</h2>
                 

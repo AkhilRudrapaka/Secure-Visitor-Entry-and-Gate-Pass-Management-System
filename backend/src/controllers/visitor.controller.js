@@ -11,8 +11,8 @@ exports.createVisitRequest = async (req, res, next) => {
         const { hostId, purpose, expectedEntryTime, expectedExitTime, additionalGuests } = req.body;
 
         const host = await User.findById(hostId);
-        if (!host || host.role !== 'faculty') {
-            return res.status(404).json({ success: false, message: 'Faculty not found' });
+        if (!host || !['faculty', 'security'].includes(host.role)) {
+            return res.status(404).json({ success: false, message: 'Host (Faculty/Security) not found' });
         }
 
         const visit = await Visitor.create({
@@ -89,13 +89,13 @@ exports.updateVisitStatus = async (req, res, next) => {
         
         const isOwner = visit.user._id.toString() === req.user.id;
         const isAssignedHost = visit.host.toString() === req.user.id;
-        const isAdmin = req.user.role === 'admin';
+        const isAdminOrSecurity = req.user.role === 'admin' || req.user.role === 'security';
 
         if (isOwner) {
             if (status !== 'cancelled') {
                  return res.status(403).json({ success: false, message: 'You can only cancel your own request' });
             }
-        } else if (!isAssignedHost && !isAdmin) {
+        } else if (!isAssignedHost && !isAdminOrSecurity) {
              return res.status(403).json({ success: false, message: 'Not authorized to update this visit' });
         }
 

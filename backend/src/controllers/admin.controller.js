@@ -3,6 +3,7 @@ const User = require('../models/User');
 const Visitor = require('../models/Visitor');
 const GatePass = require('../models/GatePass');
 const sendEmail = require('../utils/sendEmail');
+const { decrypt } = require('../utils/crypto');
 
 // @desc    Get System Stats
 // @route   GET /api/admin/stats
@@ -44,7 +45,15 @@ exports.getLogs = async (req, res, next) => {
 exports.getUsers = async (req, res, next) => {
     try {
         const users = await User.find().select('-password');
-        res.status(200).json({ success: true, count: users.length, data: users });
+        
+        // Explicitly decrypt phone for display
+        const usersWithDecryptedPhone = users.map(user => {
+            const u = user.toObject();
+            if (u.phone) u.phone = decrypt(u.phone);
+            return u;
+        });
+
+        res.status(200).json({ success: true, count: usersWithDecryptedPhone.length, data: usersWithDecryptedPhone });
     } catch (err) {
         next(err);
     }
@@ -56,7 +65,15 @@ exports.getUsers = async (req, res, next) => {
 exports.getPendingUsers = async (req, res, next) => {
     try {
         const users = await User.find({ isApproved: false }).select('-password');
-        res.status(200).json({ success: true, count: users.length, data: users });
+
+        // Explicitly decrypt phone for display
+        const usersWithDecryptedPhone = users.map(user => {
+            const u = user.toObject();
+            if (u.phone) u.phone = decrypt(u.phone);
+            return u;
+        });
+
+        res.status(200).json({ success: true, count: usersWithDecryptedPhone.length, data: usersWithDecryptedPhone });
     } catch (err) {
         next(err);
     }

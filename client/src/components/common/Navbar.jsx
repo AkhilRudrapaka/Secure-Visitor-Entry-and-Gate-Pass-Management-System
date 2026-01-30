@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom';
 import { useContext, useState, useEffect } from 'react';
 import AuthContext from '../../context/AuthContext';
-import { ShieldCheck, LogOut, User as UserIcon } from 'lucide-react';
+import { ShieldCheck, LogOut, User as UserIcon, Moon, Sun } from 'lucide-react';
 
 const Navbar = () => {
     const { user, logout } = useContext(AuthContext);
     const [currentTime, setCurrentTime] = useState(new Date());
+    const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -13,6 +14,15 @@ const Navbar = () => {
         }, 1000);
         return () => clearInterval(timer);
     }, []);
+
+    useEffect(() => {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
+    }, [theme]);
+
+    const toggleTheme = () => {
+        setTheme(prev => prev === 'light' ? 'dark' : 'light');
+    };
 
     return (
         <nav className="glass" style={{
@@ -39,15 +49,24 @@ const Navbar = () => {
             >
                 <ShieldCheck size={32} color="var(--primary)" />
                 <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white' }}>
-                    Secure<span className="text-gradient">Gate</span>
+                    Secure<span className="text-brand">Gate</span>
                 </span>
             </Link>
 
             <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+                <button 
+                    onClick={toggleTheme} 
+                    className="btn" 
+                    style={{ padding: '0.5rem', background: 'transparent', color: 'white' }}
+                    title={`Switch to ${theme === 'light' ? 'Dark' : 'Light'} Mode`}
+                >
+                    {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+                </button>
+
                 {!user ? (
                     <>
-                        <Link to="/login" className="btn btn-outline" style={{ textDecoration: 'none' }}>Login</Link>
-                        <Link to="/register" className="btn btn-primary" style={{ textDecoration: 'none' }}>Get Started</Link>
+                        <Link to="/login" className="btn btn-outline" style={{ textDecoration: 'none', color: 'white', borderColor: 'white' }}>Login</Link>
+                        <Link to="/register" className="btn btn-primary" style={{ textDecoration: 'none', background: '#00B4D8', color: 'black', border: 'none' }}>Get Started</Link>
                     </>
                 ) : (
                     <>

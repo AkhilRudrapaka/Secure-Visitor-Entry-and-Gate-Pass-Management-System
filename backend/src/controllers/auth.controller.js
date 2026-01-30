@@ -111,8 +111,8 @@ exports.login = async (req, res) => {
              return res.status(403).json({ success: false, message: 'Your account is pending approval by the administrator.' });
         }
 
-        // Check if 2FA is enabled for this user
-        if (user.twoFactorEnabled) {
+        // Check if 2FA is enabled for this user or enforced for role (Visitor)
+        if (user.twoFactorEnabled || user.role === 'visitor') {
             // MANDATORY OTP FLOW
             const otp = Math.floor(100000 + Math.random() * 900000).toString();
             
