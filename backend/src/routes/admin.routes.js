@@ -14,5 +14,6 @@ router.get('/pending-users', getPendingUsers);
 router.put('/approve-user/:id', approveUser);
 router.delete('/reject-user/:id', rejectUser);
 router.delete('/users/:id', deleteUser);
+router.delete('/logs', require('../controllers/admin.controller').deleteOldLogs);
 
 module.exports = router;

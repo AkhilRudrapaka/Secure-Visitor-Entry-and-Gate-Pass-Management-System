@@ -240,14 +240,38 @@ const AdminDashboard = () => {
                 )}
 
                 {activeTab === 'logs' && (
-                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                        <thead>
-                            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                                <th style={{ padding: '1rem' }}>Time</th>
-                                <th style={{ padding: '1rem' }}>User</th>
-                                <th style={{ padding: '1rem' }}>Action</th>
-                                <th style={{ padding: '1rem' }}>Details</th>
-                            </tr>
+                    <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                            <h3 style={{ margin: 0 }}>Audit Logs</h3>
+                            <button 
+                                onClick={async () => {
+                                    const dateStr = prompt('Enter cut-off date (YYYY-MM-DD). Logs before this date will be deleted:', '2026-01-29');
+                                    if (!dateStr) return;
+                                    
+                                    if (confirm(`Are you sure you want to delete all audit logs created BEFORE ${dateStr}?`)) {
+                                        try {
+                                            const res = await api.delete('/admin/logs', { data: { beforeDate: dateStr } });
+                                            alert(res.data.message);
+                                            fetchData();
+                                        } catch (err) {
+                                            alert(err.response?.data?.message || 'Delete failed');
+                                        }
+                                    }
+                                }}
+                                className="btn btn-outline"
+                                style={{ borderColor: 'var(--danger)', color: 'var(--danger)', padding: '0.4rem 1rem' }}
+                            >
+                                Cleanup Old Logs
+                            </button>
+                        </div>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                            <thead>
+                                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                                    <th style={{ padding: '1rem' }}>Time</th>
+                                    <th style={{ padding: '1rem' }}>User</th>
+                                    <th style={{ padding: '1rem' }}>Action</th>
+                                    <th style={{ padding: '1rem' }}>Details</th>
+                                </tr>
                         </thead>
                         <tbody>
                             {logs.map(log => (
@@ -264,6 +288,7 @@ const AdminDashboard = () => {
                             ))}
                         </tbody>
                     </table>
+                    </div>
                 )}
 
                 {activeTab === 'users' && (

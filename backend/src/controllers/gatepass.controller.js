@@ -97,7 +97,7 @@ exports.verifyPass = async (req, res, next) => {
         // Find pass by the Exact Code string
         const pass = await GatePass.findOne({ passCode }).populate({
             path: 'visitorRequest',
-            populate: { path: 'user host', select: 'name email department' }
+            populate: { path: 'user host', select: 'name email department role' }
         });
 
         if (!pass) {

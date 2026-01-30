@@ -11,12 +11,18 @@ const SecurityDashboard = () => {
         e.preventDefault();
         setLoading(true);
         setScanResult(null);
-        
+
         try {
-            // Note: In real app, the QR provides a JSON string or ID. 
-            // Our generator makes a JSON string. The security guard "scanner" (input) would receive that.
-            // Ideally, we just check the 'passCode' string in DB.
-            const res = await api.post('/gatepass/verify', { passCode });
+            let codeToSubmit = passCode;
+            try {
+                // Try to parse if it's the JSON string from QR
+                const parsed = JSON.parse(passCode);
+                if (parsed.id) codeToSubmit = parsed.id;
+            } catch (e) {
+                // Not JSON, use as is (manual entry of short code)
+            }
+
+            const res = await api.post('/gatepass/verify', { passCode: codeToSubmit });
             setScanResult({ success: true, data: res.data.data });
         } catch (err) {
             setScanResult({ success: false, message: err.response?.data?.message || 'Invalid Pass' });
@@ -33,7 +39,7 @@ const SecurityDashboard = () => {
                 <div className="glass-card" style={{ width: '100%', maxWidth: '600px', textAlign: 'center' }}>
                     <Scan size={48} color="var(--primary)" style={{ marginBottom: '1rem' }} />
                     <h2>Scan Gate Pass</h2>
-                    <p className="text-muted">Enter QR content manually to simulate scanning</p>
+                    <p className="text-muted">Use a collection device or enter Code manually</p>
                     
                     <form onSubmit={handleVerify} style={{ marginTop: '1.5rem' }}>
                         <div className="input-group">
@@ -41,7 +47,7 @@ const SecurityDashboard = () => {
                                 className="input-field"
                                 value={passCode}
                                 onChange={(e) => setPassCode(e.target.value)}
-                                placeholder="Paste QR Code content here..."
+                                placeholder="Scan or Enter Code..."
                                 style={{ textAlign: 'center', fontFamily: 'monospace' }}
                                 required
                             />
@@ -58,9 +64,29 @@ const SecurityDashboard = () => {
                                     <CheckCircle size={40} color="var(--success)" style={{ marginBottom: '10px' }} />
                                     <h3 style={{ color: 'var(--success)', margin: 0 }}>ACCESS GRANTED</h3>
                                     <div style={{ textAlign: 'left', marginTop: '1rem', color: '#fff' }}>
-                                        <p><strong>Visitor:</strong> {scanResult.data.visitorRequest.user.name}</p>
-                                        <p><strong>Host:</strong> {scanResult.data.visitorRequest.host.name}</p>
-                                        <p><strong>Valid Until:</strong> {new Date(scanResult.data.validUntil).toLocaleString()}</p>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                                            <div>
+                                                <p className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '2px' }}>Name</p>
+                                                <p style={{ fontWeight: 'bold' }}>{scanResult.data.visitorRequest.user.name}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '2px' }}>Role</p>
+                                                <p style={{ textTransform: 'capitalize' }}>{scanResult.data.visitorRequest.user.role}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '2px' }}>Purpose</p>
+                                                <p>{scanResult.data.visitorRequest.purpose}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '2px' }}>Host/Faculty</p>
+                                                <p>{scanResult.data.visitorRequest.host?.name || 'N/A'}</p>
+                                            </div>
+                                        </div>
+                                        <hr style={{ borderColor: 'rgba(255,255,255,0.1)', margin: '1rem 0' }} />
+                                        <p style={{ textAlign: 'center' }}>
+                                            <strong>Valid Until:</strong> <br/>
+                                            {new Date(scanResult.data.validUntil).toLocaleString()}
+                                        </p>
                                     </div>
                                 </div>
                             ) : (
