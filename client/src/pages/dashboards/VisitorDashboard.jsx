@@ -185,11 +185,11 @@ const VisitorDashboard = () => {
                 {visits.length === 0 ? <p>No visits found.</p> : visits.map(visit => (
                     <div key={visit._id} className="glass-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
-                            <h3 style={{ margin: '0 0 0.5rem 0' }}>Visit to: {visit.host.name}</h3>
+                            <h3 style={{ margin: '0 0 0.5rem 0' }}>Visit to: {visit.host?.name || 'Unknown Host'}</h3>
                             <div style={{ display: 'flex', gap: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
                                 <span className="flex-center"><Calendar size={14} style={{ marginRight: '5px' }} /> {new Date(visit.expectedEntryTime).toLocaleDateString()}</span>
                                 <span className="flex-center"><Clock size={14} style={{ marginRight: '5px' }} /> {new Date(visit.expectedEntryTime).toLocaleTimeString()}</span>
-                                <span className="flex-center"><User size={14} style={{ marginRight: '5px' }} /> {visit.host.department}</span>
+                                <span className="flex-center"><User size={14} style={{ marginRight: '5px' }} /> {visit.host?.department || 'N/A'}</span>
                             </div>
                             <p style={{ marginTop: '0.5rem' }}>Purpose: {visit.purpose}</p>
                         </div>
