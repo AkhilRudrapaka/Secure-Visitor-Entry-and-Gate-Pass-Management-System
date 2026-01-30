@@ -11,6 +11,6 @@ router.route('/')
     .get(getVisits);
 
 router.route('/:id')
-    .put(authorize('host', 'faculty', 'admin', 'visitor', 'student'), updateVisitStatus);
+    .put(authorize('faculty', 'admin', 'visitor', 'student'), updateVisitStatus);
 
 module.exports = router;

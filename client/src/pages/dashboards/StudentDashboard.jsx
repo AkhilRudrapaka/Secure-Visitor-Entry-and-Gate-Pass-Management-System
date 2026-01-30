@@ -127,14 +127,14 @@ const StudentDashboard = () => {
                         <form onSubmit={handleSubmit} style={{ marginTop: '1rem' }}>
                             <div className="grid-cols-2">
                                 <div className="input-group">
-                                    <label className="input-label">Approving Authority (Warden/Faculty)</label>
+                                    <label className="input-label">Approving Faculty</label>
                                     <select 
                                         className="input-field" 
                                         value={formData.hostId} 
                                         onChange={e => setFormData({...formData, hostId: e.target.value})}
                                         required
                                     >
-                                        <option value="">-- Select Warden/Faculty --</option>
+                                        <option value="">-- Select Faculty --</option>
                                         {hosts.map(h => (
                                             <option key={h._id} value={h._id}>{h.name} ({h.department})</option>
                                         ))}
@@ -201,7 +201,7 @@ const StudentDashboard = () => {
                 {visits.length === 0 ? <p>No pass applications found.</p> : visits.map(visit => (
                     <div key={visit._id} className="glass-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
-                            <h3 style={{ margin: '0 0 0.5rem 0' }}>Request to: {visit.host.name}</h3>
+                            <h3 style={{ margin: '0 0 0.5rem 0' }}>Request to: {visit.host?.name || 'Unknown Faculty'}</h3>
                             <div style={{ display: 'flex', gap: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
                                 <span className="flex-center"><Calendar size={14} style={{ marginRight: '5px' }} /> {new Date(visit.expectedEntryTime).toLocaleDateString()}</span>
                                 <span className="flex-center"><Clock size={14} style={{ marginRight: '5px' }} /> {new Date(visit.expectedEntryTime).toLocaleTimeString()} - {new Date(visit.expectedExitTime).toLocaleTimeString()}</span>

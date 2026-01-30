@@ -54,13 +54,16 @@ export const AuthProvider = ({ children }) => {
             setError(null);
             const res = await api.post('/auth/register', userData);
             if (res.data.success) {
-                localStorage.setItem('token', res.data.token);
-                setUser(res.data.user);
-                return true;
+                if (res.data.token) {
+                    localStorage.setItem('token', res.data.token);
+                    setUser(res.data.user);
+                    return { success: true };
+                }
+                return { success: true, pending: true, message: res.data.message };
             }
         } catch (err) {
              setError(err.response?.data?.message || 'Registration failed');
-             return false;
+             return { success: false };
         }
     };
 

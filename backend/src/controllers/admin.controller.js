@@ -2,6 +2,7 @@ const AuditLog = require('../models/AuditLog');
 const User = require('../models/User');
 const Visitor = require('../models/Visitor');
 const GatePass = require('../models/GatePass');
+const sendEmail = require('../utils/sendEmail');
 
 // @desc    Get System Stats
 // @route   GET /api/admin/stats
@@ -44,6 +45,97 @@ exports.getUsers = async (req, res, next) => {
     try {
         const users = await User.find().select('-password');
         res.status(200).json({ success: true, count: users.length, data: users });
+    } catch (err) {
+        next(err);
+    }
+};
+
+// @desc    Get Pending Users
+// @route   GET /api/admin/pending-users
+// @access  Private (Admin)
+exports.getPendingUsers = async (req, res, next) => {
+    try {
+        const users = await User.find({ isApproved: false }).select('-password');
+        res.status(200).json({ success: true, count: users.length, data: users });
+    } catch (err) {
+        next(err);
+    }
+};
+
+// @desc    Approve User
+// @route   PUT /api/admin/approve-user/:id
+// @access  Private (Admin)
+exports.approveUser = async (req, res, next) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        user.isApproved = true;
+        await user.save();
+
+        // Send Approval Email
+        try {
+            await sendEmail({
+                email: user.email,
+                subject: 'Account Approved - Secure Gate Pass System',
+                message: `Hello ${user.name},\n\nYour account has been approved by the administrator. You can now login to the system.\n\nRegards,\nSecure Gate Team`
+            });
+        } catch (emailErr) {
+            console.error('Email sending failed for approval:', emailErr);
+        }
+
+        res.status(200).json({ success: true, message: 'User approved' });
+    } catch (err) {
+        next(err);
+    }
+};
+
+// @desc    Reject User
+// @route   DELETE /api/admin/reject-user/:id
+// @access  Private (Admin)
+exports.rejectUser = async (req, res, next) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        // Send Rejection Email
+        try {
+            await sendEmail({
+                email: user.email,
+                subject: 'Account Registration Rejected - Secure Gate Pass System',
+                message: `Hello ${user.name},\n\nYour account registration has been rejected by the administrator.\n\nRegards,\nSecure Gate Team`
+            });
+        } catch (emailErr) {
+             console.error('Email sending failed for rejection:', emailErr);
+        }
+
+        await user.deleteOne();
+        res.status(200).json({ success: true, message: 'User request rejected and removed.' });
+    } catch (err) {
+        next(err);
+    }
+};
+
+// @desc    Delete User (Generic)
+// @route   DELETE /api/admin/users/:id
+// @access  Private (Admin)
+exports.deleteUser = async (req, res, next) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        // Prevent deleting yourself (Admin)
+        if (user._id.toString() === req.user.id) {
+             return res.status(400).json({ success: false, message: 'You cannot delete yourself' });
+        }
+
+        await user.deleteOne();
+        res.status(200).json({ success: true, message: 'User deleted successfully' });
     } catch (err) {
         next(err);
     }

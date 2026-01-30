@@ -65,9 +65,14 @@ const Register = () => {
         }
 
         setLoading(true);
-        const success = await register({ ...formData, confirmPassword: undefined }); // Don't send confirmPass to backend
-        if (success) {
-            navigate('/dashboard');
+        const result = await register({ ...formData, confirmPassword: undefined }); // Don't send confirmPass to backend
+        if (result.success) {
+            if (result.pending) {
+                alert(result.message);
+                navigate('/login');
+            } else {
+                navigate('/dashboard');
+            }
         } else {
             setLoading(false);
         }
@@ -192,7 +197,6 @@ const Register = () => {
                         <select name="role" className="input-field" value={role} onChange={onChange} style={{ cursor: 'pointer' }}>
                             <option value="student">Student</option>
                             <option value="visitor">Visitor (Parent/Guest)</option>
-                            <option value="host">Host</option>
                             <option value="faculty">Faculty</option>
                             <option value="security">Security Staff</option>
                             <option value="admin">Administrator</option>
@@ -202,7 +206,7 @@ const Register = () => {
                         </small>
                     </div>
 
-                    {(role === 'host' || role === 'faculty') && (
+                    {role === 'faculty' && (
                         <div className="input-group">
                             <label className="input-label">Department</label>
                             <div style={{ position: 'relative' }}>

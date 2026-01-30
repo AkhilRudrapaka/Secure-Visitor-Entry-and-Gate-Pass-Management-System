@@ -2,6 +2,8 @@ const User = require('../models/User');
 const { logAction } = require('../utils/logger');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const sendEmail = require('../utils/sendEmail');
+const { getOtpEmailTemplate } = require('../utils/emailTemplates');
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -15,15 +17,17 @@ exports.register = async (req, res) => {
         const cleanPhone = phone ? phone.trim() : '';
 
         // Check if this is the first user (make them admin)
-        // Check if this is the first user (make them admin)
         const isFirstAccount = (await User.countDocuments({})) === 0;
         
         let finalRole = role || 'visitor';
+        let isApproved = true;
 
         if (isFirstAccount) {
             finalRole = 'admin';
         } else if (role === 'admin') {
             return res.status(403).json({ success: false, message: 'Admin registration is restricted.' });
+        } else if (['faculty', 'security'].includes(finalRole)) {
+            isApproved = false;
         }
 
         const user = await User.create({
@@ -33,10 +37,32 @@ exports.register = async (req, res) => {
             role: finalRole,
             phone: cleanPhone,
             department,
-            twoFactorEnabled: true // Enforce 2FA for everyone by default
+            twoFactorEnabled: true,
+            isApproved
         });
 
         await logAction(user._id, 'register', `User ${name} registered as ${finalRole}`);
+
+        if (!isApproved) {
+            // Notify Admin
+            const admin = await User.findOne({ role: 'admin' });
+            if (admin) {
+                try {
+                    await sendEmail({
+                        email: admin.email,
+                        subject: 'New User Registration Pending Approval',
+                        message: `A new user has registered and requires approval.\n\nName: ${user.name}\nEmail: ${user.email}\nRole: ${user.role}\n\nPlease log in to the admin dashboard to approve/reject this request.`
+                    });
+                } catch (emailErr) {
+                    console.error('Failed to send admin notification email:', emailErr);
+                }
+            }
+
+            return res.status(200).json({
+                success: true,
+                message: 'Registration successful. Your account is pending approval by the administrator.'
+            });
+        }
 
         const token = user.getSignedJwtToken();
         res.status(201).json({
@@ -81,43 +107,71 @@ exports.login = async (req, res) => {
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
 
-        // MANDATORY OTP FLOW
-        // Always generate and send OTP regardless of user preference
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        
-        // Store OTP (hashed) and expiry (5 minutes)
-        user.twoFactorSecret = crypto.createHash('sha256').update(otp).digest('hex');
-        user.otpExpire = Date.now() + 5 * 60 * 1000;
-        await user.save({ validateBeforeSave: false });
-
-        // Send OTP via email
-        try {
-            const transporter = nodemailer.createTransport({
-                service: process.env.EMAIL_SERVICE,
-                auth: {
-                    user: process.env.EMAIL_USER,
-                    pass: process.env.EMAIL_PASS
-                }
-            });
-
-            await transporter.sendMail({
-                from: `SecureGate <${process.env.EMAIL_USER}>`,
-                to: user.email,
-                subject: 'Your Login OTP Code',
-                text: `Your OTP code is: ${otp}\n\nThis code will expire in 5 minutes.`
-            });
-
-            await logAction(user._id, 'otp_sent', `OTP sent to ${user.email}`, req);
-
-            return res.status(200).json({
-                success: true,
-                requiresOTP: true,
-                message: 'OTP sent to your email'
-            });
-        } catch (err) {
-            console.error('Email error:', err);
-            return res.status(500).json({ success: false, message: 'Failed to send OTP' });
+        if (user.isApproved === false) {
+             return res.status(403).json({ success: false, message: 'Your account is pending approval by the administrator.' });
         }
+
+        // Check if 2FA is enabled for this user
+        if (user.twoFactorEnabled) {
+            // MANDATORY OTP FLOW
+            const otp = Math.floor(100000 + Math.random() * 900000).toString();
+            
+            // Store OTP (hashed) and expiry (5 minutes)
+            user.twoFactorSecret = crypto.createHash('sha256').update(otp).digest('hex');
+            user.otpExpire = Date.now() + 5 * 60 * 1000;
+            await user.save({ validateBeforeSave: false });
+
+            // Send OTP via email
+            try {
+                const transporter = nodemailer.createTransport({
+                    service: process.env.EMAIL_SERVICE,
+                    auth: {
+                        user: process.env.EMAIL_USER,
+                        pass: process.env.EMAIL_PASS
+                    }
+                });
+
+                await transporter.sendMail({
+                    from: `SecureGate <${process.env.EMAIL_USER}>`,
+                    to: user.email,
+                    subject: 'Your Login OTP Code',
+                    html: getOtpEmailTemplate(otp, 'Login Verification')
+                });
+
+                await logAction(user._id, 'otp_sent', `OTP sent to ${user.email}`, req);
+
+                return res.status(200).json({
+                    success: true,
+                    requiresOTP: true,
+                    message: 'OTP sent to your email'
+                });
+            } catch (err) {
+                console.error('Email error:', err);
+                return res.status(500).json({ success: false, message: 'Failed to send OTP' });
+            }
+        }
+
+        // No 2FA - Return Token
+        const token = user.getSignedJwtToken();
+        await logAction(user._id, 'login', `User ${user.name} logged in`);
+
+        res.cookie('token', token, {
+            expires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 1 day
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+        });
+
+        res.status(200).json({
+            success: true,
+            token,
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role
+            }
+        });
     } catch (error) {
         console.error('LOGIN ERROR:', error);
         res.status(500).json({ success: false, message: error.stack || error.message });
@@ -301,7 +355,7 @@ exports.resendOTP = async (req, res) => {
             from: `SecureGate <${process.env.EMAIL_USER}>`,
             to: user.email,
             subject: 'Your New Login OTP Code',
-            text: `Your new OTP code is: ${otp}\n\nThis code will expire in 5 minutes.`
+            html: getOtpEmailTemplate(otp, 'New Login OTP')
         });
 
         res.status(200).json({ success: true, message: 'New OTP sent' });
@@ -367,6 +421,139 @@ exports.resetPassword = async (req, res) => {
             token,
             message: 'Password reset successful'
         });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// @desc    Update user details
+// @route   PUT /api/auth/updatedetails
+// @access  Private
+exports.updateDetails = async (req, res) => {
+    try {
+        const fieldsToUpdate = {
+            name: req.body.name
+        };
+
+        const user = await User.findByIdAndUpdate(req.user.id, fieldsToUpdate, {
+            new: true,
+            runValidators: true
+        });
+
+        await logAction(user._id, 'update_details', 'User details updated');
+
+        res.status(200).json({
+            success: true,
+            data: user
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// @desc    Update password
+// @route   PUT /api/auth/updatepassword
+// @access  Private
+exports.updatePassword = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).select('+password');
+
+        if (!(await user.matchPassword(req.body.currentPassword))) {
+            return res.status(401).json({ success: false, message: 'Incorrect current password' });
+        }
+
+        user.password = req.body.newPassword;
+        await user.save();
+
+        await logAction(user._id, 'update_password', 'Password updated');
+
+        res.status(200).json({
+            success: true,
+            message: 'Password updated successfully'
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// @desc    Initiate email update
+// @route   POST /api/auth/update-email/initiate
+// @access  Private
+exports.initiateEmailUpdate = async (req, res) => {
+    try {
+        const { newEmail, password } = req.body;
+        
+        if (!newEmail || !password) {
+             return res.status(400).json({ success: false, message: 'Please provide new email and password' });
+        }
+
+        const user = await User.findById(req.user.id).select('+password');
+
+        if (!(await user.matchPassword(password))) {
+             return res.status(401).json({ success: false, message: 'Incorrect password' });
+        }
+        
+        // Generate OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const hashedOTP = crypto.createHash('sha256').update(otp).digest('hex');
+
+        user.tempEmail = newEmail;
+        user.tempEmailSecret = hashedOTP;
+        user.tempEmailExpire = Date.now() + 10 * 60 * 1000; // 10 mins
+
+        await user.save({ validateBeforeSave: false });
+
+        // Send OTP to NEW email
+        const transporter = nodemailer.createTransport({
+            service: process.env.EMAIL_SERVICE,
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            }
+        });
+
+        await transporter.sendMail({
+            from: `SecureGate <${process.env.EMAIL_USER}>`,
+            to: newEmail,
+            subject: 'Email Change Verification',
+            html: getOtpEmailTemplate(otp, 'Email Change Request')
+        });
+
+        res.status(200).json({ success: true, message: `OTP sent to ${newEmail}` });
+
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// @desc    Verify email update
+// @route   PUT /api/auth/update-email/verify
+// @access  Private
+exports.verifyEmailUpdate = async (req, res) => {
+    try {
+        const { otp } = req.body;
+        const hashedOTP = crypto.createHash('sha256').update(otp).digest('hex');
+
+        const user = await User.findById(req.user.id);
+
+        if (
+            user.tempEmailSecret !== hashedOTP ||
+            user.tempEmailExpire < Date.now()
+        ) {
+            return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
+        }
+
+        user.email = user.tempEmail;
+        user.tempEmail = undefined;
+        user.tempEmailSecret = undefined;
+        user.tempEmailExpire = undefined;
+
+        await user.save();
+        
+        await logAction(user._id, 'update_email', `Email updated to ${user.email}`);
+
+        res.status(200).json({ success: true, message: 'Email updated successfully', data: user });
+
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

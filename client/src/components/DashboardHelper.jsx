@@ -18,7 +18,6 @@ const DashboardHelper = () => {
     switch (user.role) {
         case 'visitor':
             return <VisitorDashboard />;
-        case 'host':
         case 'faculty':
             return <HostDashboard />;
         case 'security':

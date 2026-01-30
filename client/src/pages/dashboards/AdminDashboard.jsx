@@ -1,17 +1,19 @@
 import { useState, useEffect, useContext } from 'react';
 import api from '../../api/axios';
-import { Users, FileText, Activity } from 'lucide-react';
+import { Users, FileText, Activity, UserPlus, Check, X } from 'lucide-react';
 
 const AdminDashboard = () => {
     const [stats, setStats] = useState({ totalUsers: 0, totalVisits: 0, activePasses: 0 });
     const [logs, setLogs] = useState([]);
     const [users, setUsers] = useState([]);
     const [pendingVisits, setPendingVisits] = useState([]);
+    const [pendingUsers, setPendingUsers] = useState([]);
     const [activeTab, setActiveTab] = useState('requests'); // Default to requests as it's actionable
 
     useEffect(() => {
         fetchData();
         fetchPendingVisits();
+        fetchPendingUsers();
     }, []);
 
     const fetchData = async () => {
@@ -40,6 +42,15 @@ const AdminDashboard = () => {
         }
     };
 
+    const fetchPendingUsers = async () => {
+        try {
+            const res = await api.get('/admin/pending-users');
+            setPendingUsers(res.data.data);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
     const handleAction = async (id, status) => {
         try {
             await api.put(`/visitors/${id}`, { status });
@@ -50,12 +61,40 @@ const AdminDashboard = () => {
         }
     };
 
+    const handleUserApproval = async (id, action) => {
+        try {
+            if (action === 'approve') {
+                await api.put(`/admin/approve-user/${id}`);
+                alert('User Approved');
+            } else {
+                if(!window.confirm('Are you sure you want to reject and remove this user request?')) return;
+                await api.delete(`/admin/reject-user/${id}`);
+                alert('User Rejected');
+            }
+            fetchPendingUsers();
+            fetchData();
+        } catch (err) {
+            alert(err.response?.data?.message || 'Action failed');
+        }
+    };
+
+    const handleUserDelete = async (id) => {
+        if (!window.confirm('Are you sure you want to PERMANENTLY delete this user? This action cannot be undone.')) return;
+        try {
+            await api.delete(`/admin/users/${id}`);
+            alert('User deleted successfully');
+            fetchData();
+        } catch (err) {
+            alert(err.response?.data?.message || 'Delete failed');
+        }
+    };
+
     return (
         <div className="container" style={{ paddingTop: '100px' }}>
             <h1>System Overview</h1>
             
             {/* Stats Cards */}
-            <div className="grid-cols-2" style={{ gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '3rem' }}>
+            <div className="grid-cols-2" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem', marginBottom: '3rem' }}>
                 <div className="glass-card">
                     <div className="flex-center" style={{ justifyContent: 'flex-start', gap: '1rem' }}>
                         <Users size={32} color="var(--primary)" />
@@ -83,15 +122,30 @@ const AdminDashboard = () => {
                         </div>
                     </div>
                 </div>
+                 <div className="glass-card">
+                    <div className="flex-center" style={{ justifyContent: 'flex-start', gap: '1rem' }}>
+                        <UserPlus size={32} color="orange" />
+                        <div>
+                            <h3 style={{ margin: 0 }}>{pendingUsers.length}</h3>
+                            <p className="text-muted" style={{ margin: 0 }}>Pending Users</p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {/* Tabs */}
-            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
                 <button 
                     className={`btn ${activeTab === 'requests' ? 'btn-primary' : 'btn-outline'}`}
                     onClick={() => setActiveTab('requests')}
                 >
-                    Requests ({pendingVisits.length})
+                    Visit Requests ({pendingVisits.length})
+                </button>
+                <button 
+                    className={`btn ${activeTab === 'approvals' ? 'btn-primary' : 'btn-outline'}`}
+                    onClick={() => setActiveTab('approvals')}
+                >
+                    User Approvals ({pendingUsers.length})
                 </button>
                 <button 
                     className={`btn ${activeTab === 'logs' ? 'btn-primary' : 'btn-outline'}`}
@@ -116,7 +170,7 @@ const AdminDashboard = () => {
                                 <thead>
                                     <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
                                         <th style={{ padding: '1rem' }}>Visitor</th>
-                                        <th style={{ padding: '1rem' }}>Host</th>
+                                        <th style={{ padding: '1rem' }}>Faculty</th>
                                         <th style={{ padding: '1rem' }}>Time</th>
                                         <th style={{ padding: '1rem' }}>Purpose</th>
                                         <th style={{ padding: '1rem' }}>Actions</th>
@@ -132,6 +186,50 @@ const AdminDashboard = () => {
                                             <td style={{ padding: '1rem', display: 'flex', gap: '0.5rem' }}>
                                                 <button onClick={() => handleAction(v._id, 'approved')} className="btn" style={{ fontSize: '0.8rem', padding: '0.3rem 0.8rem', background: 'var(--success)' }}>Approve</button>
                                                 <button onClick={() => handleAction(v._id, 'rejected')} className="btn" style={{ fontSize: '0.8rem', padding: '0.3rem 0.8rem', background: 'var(--danger)' }}>Reject</button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                             </table>
+                         )}
+                    </div>
+                )}
+
+                {activeTab === 'approvals' && (
+                     <div style={{ padding: '0.5rem' }}>
+                         {pendingUsers.length === 0 ? <p className="text-muted">No pending user registrations.</p> : (
+                             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                                <thead>
+                                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                                        <th style={{ padding: '1rem' }}>Name</th>
+                                        <th style={{ padding: '1rem' }}>Email</th>
+                                        <th style={{ padding: '1rem' }}>Role</th>
+                                        <th style={{ padding: '1rem' }}>Department</th>
+                                        <th style={{ padding: '1rem' }}>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {pendingUsers.map(u => (
+                                        <tr key={u._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                            <td style={{ padding: '1rem' }}>{u.name}</td>
+                                            <td style={{ padding: '1rem' }}>{u.email}</td>
+                                            <td style={{ padding: '1rem' }}>
+                                                <span style={{ 
+                                                    padding: '4px 8px', borderRadius: '10px', 
+                                                    background: 'rgba(255, 165, 0, 0.2)', color: 'orange',
+                                                    fontSize: '0.8rem'
+                                                }}>
+                                                    {u.role.toUpperCase()}
+                                                </span>
+                                            </td>
+                                            <td style={{ padding: '1rem' }}>{u.department || 'N/A'}</td>
+                                            <td style={{ padding: '1rem', display: 'flex', gap: '0.5rem' }}>
+                                                <button onClick={() => handleUserApproval(u._id, 'approve')} className="btn" style={{ fontSize: '0.8rem', padding: '0.3rem 0.8rem', background: 'var(--success)' }}>
+                                                    <Check size={14} style={{ marginRight: '4px' }}/> Approve
+                                                </button>
+                                                <button onClick={() => handleUserApproval(u._id, 'reject')} className="btn" style={{ fontSize: '0.8rem', padding: '0.3rem 0.8rem', background: 'var(--danger)' }}>
+                                                    <X size={14} style={{ marginRight: '4px' }}/> Reject
+                                                </button>
                                             </td>
                                         </tr>
                                     ))}
@@ -176,6 +274,7 @@ const AdminDashboard = () => {
                                 <th style={{ padding: '1rem' }}>Email</th>
                                 <th style={{ padding: '1rem' }}>Role</th>
                                 <th style={{ padding: '1rem' }}>Phone</th>
+                                <th style={{ padding: '1rem' }}>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -193,6 +292,17 @@ const AdminDashboard = () => {
                                         </span>
                                     </td>
                                     <td style={{ padding: '1rem' }}>{u.phone}</td>
+                                    <td style={{ padding: '1rem' }}>
+                                        {u.role !== 'admin' && (
+                                            <button 
+                                                onClick={() => handleUserDelete(u._id)} 
+                                                className="btn" 
+                                                style={{ fontSize: '0.8rem', padding: '0.3rem 0.8rem', background: 'var(--danger)' }}
+                                            >
+                                                Delete
+                                            </button>
+                                        )}
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
@@ -201,6 +311,7 @@ const AdminDashboard = () => {
             </div>
         </div>
     );
+
 };
 
 export default AdminDashboard;

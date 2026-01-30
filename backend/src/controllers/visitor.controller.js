@@ -11,8 +11,8 @@ exports.createVisitRequest = async (req, res, next) => {
         const { hostId, purpose, expectedEntryTime, expectedExitTime, additionalGuests } = req.body;
 
         const host = await User.findById(hostId);
-        if (!host || (host.role !== 'host' && host.role !== 'faculty')) {
-            return res.status(404).json({ success: false, message: 'Host/Faculty not found' });
+        if (!host || host.role !== 'faculty') {
+            return res.status(404).json({ success: false, message: 'Faculty not found' });
         }
 
         const visit = await Visitor.create({
@@ -54,7 +54,7 @@ exports.getVisits = async (req, res, next) => {
         // Role based filtering
         if (req.user.role === 'visitor' || req.user.role === 'student') {
             query = Visitor.find({ user: req.user.id });
-        } else if (req.user.role === 'host' || req.user.role === 'faculty') {
+        } else if (req.user.role === 'faculty') {
             query = Visitor.find({ host: req.user.id });
         } else {
             // Admin / Security see all

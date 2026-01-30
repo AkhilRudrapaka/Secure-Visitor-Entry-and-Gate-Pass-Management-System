@@ -63,12 +63,17 @@ exports.generatePass = async (req, res, next) => {
         }
 
         // Generate QR Payload
-        const payloadObj = {
+        const payloadData = {
             id: shortCode, 
             uid: req.user.name,
             exp: pass.validUntil
         };
-        const qrString = JSON.stringify(payloadObj);
+
+        // Create Digital Signature (HMAC)
+        const signature = crypto.createHmac('sha256', process.env.JWT_SECRET).update(JSON.stringify(payloadData)).digest('hex');
+
+        const finalPayload = { ...payloadData, sig: signature };
+        const qrString = JSON.stringify(finalPayload);
         const qrCodeUrl = await QRCode.toDataURL(qrString);
 
         res.status(pass.isNew ? 201 : 200).json({ 
@@ -98,6 +103,14 @@ exports.verifyPass = async (req, res, next) => {
         if (!pass) {
             await logAction(req.user.id, 'VERIFY_FAIL', 'Invalid gate pass code', req);
             return res.status(404).json({ success: false, message: 'Invalid Gate Pass' });
+        }
+
+        // Optional: Verify Signature if provided in request (for strict security checks)
+        if (req.body.signature && req.body.payloadData) {
+             const expectedSig = crypto.createHmac('sha256', process.env.JWT_SECRET).update(JSON.stringify(req.body.payloadData)).digest('hex');
+             if (req.body.signature !== expectedSig) {
+                 return res.status(400).json({ success: false, message: 'Digital Signature Mismatch - Possible Tampering' });
+             }
         }
 
         const now = new Date();

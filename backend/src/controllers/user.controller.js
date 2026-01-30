@@ -5,7 +5,13 @@ const User = require('../models/User');
 // @access  Private
 exports.getHosts = async (req, res, next) => {
     try {
-        const hosts = await User.find({ role: { $in: ['host', 'faculty'] } }).select('name email department');
+        let filterRole = 'faculty'; // Default for students
+
+        if (req.user.role === 'visitor') {
+            filterRole = 'security';
+        }
+
+        const hosts = await User.find({ role: filterRole }).select('name email department');
         res.status(200).json({ success: true, data: hosts });
     } catch (err) {
         next(err);

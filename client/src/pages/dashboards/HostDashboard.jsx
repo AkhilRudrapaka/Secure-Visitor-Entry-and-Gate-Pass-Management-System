@@ -37,7 +37,7 @@ const HostDashboard = () => {
 
     return (
         <div className="container" style={{ paddingTop: '100px' }}>
-            <h1>Host Panel</h1>
+            <h1>Faculty Dashboard</h1>
             <p className="text-muted">Manage visitor requests</p>
             
             <div style={{ marginTop: '2rem' }}>

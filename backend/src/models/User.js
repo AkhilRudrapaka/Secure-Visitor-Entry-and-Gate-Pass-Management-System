@@ -28,7 +28,7 @@ const UserSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['admin', 'security', 'host', 'visitor', 'student', 'faculty'],
+        enum: ['admin', 'security', 'visitor', 'student', 'faculty'],
         default: 'visitor'
     },
     phone: {
@@ -45,8 +45,15 @@ const UserSchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
+    isApproved: {
+        type: Boolean,
+        default: true // Default true for everyone, but overridden for restricted roles in controller
+    },
     twoFactorSecret: String, // Stores OTP temporarily
     otpExpire: Date, // OTP expiration time
+    tempEmail: String,
+    tempEmailSecret: String,
+    tempEmailExpire: Date,
     createdAt: {
         type: Date,
         default: Date.now

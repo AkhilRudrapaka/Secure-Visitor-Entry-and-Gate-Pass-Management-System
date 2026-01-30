@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.use(protect);
 
-router.post('/generate', authorize('visitor'), generatePass);
+router.post('/generate', authorize('visitor', 'student'), generatePass);
 router.post('/verify', authorize('security', 'admin'), verifyPass);
 
 module.exports = router;

@@ -124,14 +124,14 @@ const VisitorDashboard = () => {
                         <form onSubmit={handleSubmit} style={{ marginTop: '1rem' }}>
                             <div className="grid-cols-2">
                                 <div className="input-group">
-                                    <label className="input-label">Select Host</label>
+                                    <label className="input-label">Select Security Officer</label>
                                     <select 
                                         className="input-field" 
                                         value={formData.hostId} 
                                         onChange={e => setFormData({...formData, hostId: e.target.value})}
                                         required
                                     >
-                                        <option value="">-- Choose Host --</option>
+                                        <option value="">-- Choose Security Officer --</option>
                                         {hosts.map(h => (
                                             <option key={h._id} value={h._id}>{h.name} ({h.department})</option>
                                         ))}

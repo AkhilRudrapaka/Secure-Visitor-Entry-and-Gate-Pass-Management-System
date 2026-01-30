@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Lock, QrCode, Shield, CheckCircle } from 'lucide-react';
+import AccessControlMatrix from '../components/AccessControlMatrix';
 
 const Landing = () => {
     const navigate = useNavigate();
@@ -71,6 +72,11 @@ const Landing = () => {
                         desc="AES-256 encryption for all sensitive user data and audit logs."
                     />
                 </div>
+            </section>
+
+            {/* Access Control Matrix Showcase */}
+            <section className="container" style={{ padding: '2rem 1.5rem 6rem' }}>
+                <AccessControlMatrix />
             </section>
         </div>
     );
